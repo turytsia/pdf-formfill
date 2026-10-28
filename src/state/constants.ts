@@ -16,6 +16,6 @@ export const PASTE_OFFSET = 12;
 
 export const INITIAL_ITEM_DEFAULTS: ItemDefaults = {
   fontSize: 11,
-  spacing: 12,
+  spacing: 11.59,
   markSize: 8,
 } as const;
