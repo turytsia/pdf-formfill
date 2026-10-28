@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { css } from '@emotion/css';
+import { Download } from 'lucide-react';
 import { PAGE_GUTTER } from '../../state/constants';
 import { EditorProvider, useEditor } from '../../state/EditorContext';
 import {
@@ -12,10 +13,12 @@ import type { LoadedFormFont } from '../../utilities/formFont';
 import { fitZoom } from '../../utilities/geometry';
 import type { LoadedPdf } from '../../utilities/loadPdf';
 import { MOBILE_MEDIA } from '../../styles/breakpoints';
+import { Button } from '../ui/Button';
+import { Dialog } from '../ui/Dialog';
 import { EditorHeader } from './EditorHeader';
 import { LargeFileNotice } from './LargeFileNotice';
 import { PageCanvas } from './PageCanvas';
-import { PropertiesPanel } from './PropertiesPanel';
+import { SidePanel } from './SidePanel';
 import { ToolRail } from './ToolRail';
 import { useEditingOnPage } from './useEditingOnPage';
 import { useEditorClipboard } from './useEditorClipboard';
@@ -49,8 +52,11 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   const { state, dispatch, font, pages } = useEditor();
   const scrollRef = useRef<HTMLDivElement>(null);
   const pagesRef = useRef<HTMLDivElement>(null);
+  const stackRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [fieldsOpen, setFieldsOpen] = useState(false);
+  const [confirmingReplace, setConfirmingReplace] = useState(false);
   const widestPage = Math.max(...pages.map((page) => page.geometry.width));
   // Later pages load lazily; the initial fit must not jump when they arrive.
   const initialPageWidth = pdf.firstPage.geometry.width;
@@ -92,7 +98,7 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
     });
   }, [dispatch, initialPageWidth]);
 
-  usePinchZoom(scrollRef);
+  usePinchZoom(scrollRef, stackRef);
   useVisualViewport();
   useKeepFocusedFieldVisible(scrollRef);
   const editingOnPage = useEditingOnPage();
@@ -121,6 +127,30 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   useEditorShortcuts(handleDownload);
   useEditorClipboard();
 
+  // Nothing is persisted, so leaving a document with fields on it needs a confirmation.
+  const requestReplace = (): void => {
+    if (state.items.length === 0) {
+      onReplace();
+      return;
+    }
+    setConfirmingReplace(true);
+  };
+
+  const downloadInstead = (): void => {
+    setConfirmingReplace(false);
+    void handleDownload();
+  };
+
+  const toggleFields = (): void => {
+    if (!fieldsOpen) {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      dispatch({ type: 'select', id: null });
+    }
+    setFieldsOpen(!fieldsOpen);
+  };
+
   const handleBackgroundPointerDown = (
     event: React.PointerEvent<HTMLDivElement>,
   ): void => {
@@ -142,10 +172,14 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
         exporting={exporting}
         exportError={exportError}
         onDownload={handleDownload}
-        onReplace={onReplace}
+        onReplace={requestReplace}
       />
       <div className={styles.body}>
-        <ToolRail hiddenOnMobile={editingOnPage} />
+        <ToolRail
+          hiddenOnMobile={editingOnPage}
+          fieldsOpen={fieldsOpen}
+          onToggleFields={toggleFields}
+        />
         <div className={styles.canvasArea}>
           <div
             ref={scrollRef}
@@ -153,28 +187,65 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
             onPointerDown={handleBackgroundPointerDown}
           >
             <div ref={pagesRef} className={styles.pages}>
-              {pages.map((page) => (
-                <PageCanvas
-                  key={page.geometry.index}
-                  page={page}
-                  pageCount={pdf.pageCount}
-                />
-              ))}
+              <div ref={stackRef} className={styles.stack}>
+                {pages.map((page) => (
+                  <PageCanvas
+                    key={page.geometry.index}
+                    page={page}
+                    pageCount={pdf.pageCount}
+                  />
+                ))}
+              </div>
             </div>
           </div>
           <LargeFileNotice byteLength={pdf.bytes.byteLength} />
           <ZoomToolbar
             onFit={fitToWidth}
-            hiddenOnMobile={state.selectedId !== null}
+            hiddenOnMobile={state.selectedId !== null || fieldsOpen}
           />
         </div>
-        <PropertiesPanel collapsedOnMobile={editingOnPage} />
+        <SidePanel
+          collapsedOnMobile={editingOnPage}
+          fieldsOpenOnMobile={fieldsOpen}
+          onCloseFields={() => setFieldsOpen(false)}
+        />
       </div>
+      <Dialog
+        open={confirmingReplace}
+        title='Open another PDF?'
+        onClose={() => setConfirmingReplace(false)}
+        actions={
+          <>
+            <Button size='sm' onClick={() => setConfirmingReplace(false)}>
+              Cancel
+            </Button>
+            <Button
+              size='sm'
+              icon={<Download size={14} />}
+              onClick={downloadInstead}
+            >
+              Download PDF
+            </Button>
+            <Button size='sm' variant='danger' onClick={onReplace}>
+              Discard and open
+            </Button>
+          </>
+        }
+      >
+        Your session isn&apos;t saved anywhere. The fields you added to{' '}
+        <strong className={styles.fileName}>{pdf.name}</strong> will be lost
+        unless you download the PDF first.
+      </Dialog>
     </div>
   );
 };
 
 const styles = {
+  fileName: css`
+    font-weight: 500;
+    color: var(--color-fg);
+    word-break: break-all;
+  `,
   root: css`
     height: var(--app-height, 100%);
     display: flex;
@@ -215,18 +286,28 @@ const styles = {
     background-image: radial-gradient(var(--color-border) 1px, transparent 1px);
     background-size: 24px 24px;
   `,
+  // Sizes the scroll area; it is never transformed, so a zoom-out preview can't
+  // shrink the scrollable area and make the browser clamp the scroll position.
   pages: css`
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 40px;
+    justify-content: center;
     width: max-content;
     min-width: 100%;
     padding: 32px ${PAGE_GUTTER}px 120px;
 
     ${MOBILE_MEDIA} {
-      gap: 24px;
       padding: 16px 16px 120px;
+    }
+  `,
+  // Receives the zoom preview transform while a pinch is in progress.
+  stack: css`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+
+    ${MOBILE_MEDIA} {
+      gap: 24px;
     }
   `,
 };

@@ -98,6 +98,7 @@ export const TextItemView: React.FC<TextItemViewProps> = ({
   return (
     <div
       className={styles.item}
+      data-item-id={item.id}
       data-selected={selected}
       style={{
         left: topLeft.x,

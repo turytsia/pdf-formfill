@@ -62,6 +62,7 @@ export const MarkItemView: React.FC<MarkItemViewProps> = ({
     <button
       type='button'
       className={styles.mark}
+      data-item-id={item.id}
       data-selected={selected}
       aria-label='X mark'
       style={{

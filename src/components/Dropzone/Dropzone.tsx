@@ -4,6 +4,7 @@ import { css } from '@emotion/css';
 import { Download, FileText, Lock, MoveHorizontal, Upload } from 'lucide-react';
 import { MOBILE_MEDIA } from '../../styles/breakpoints';
 import { Button } from '../ui/Button';
+import { GithubLink } from '../ui/GithubLink';
 import { Wordmark } from '../ui/Wordmark';
 
 interface DropzoneProps {
@@ -64,6 +65,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
     >
       <header className={styles.header}>
         <Wordmark />
+        <GithubLink />
       </header>
 
       <section className={styles.hero}>
@@ -161,6 +163,7 @@ const styles = {
     height: var(--header-height);
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 24px;
   `,
   hero: css`

@@ -3,6 +3,8 @@ import { isOnPageField } from './useEditingOnPage';
 
 // Breathing room between the field and whatever would cover it.
 const VISIBLE_MARGIN = 16;
+// The on-screen keyboard shrinks the visual viewport well below the layout viewport.
+const KEYBOARD_HEIGHT_THRESHOLD = 120;
 
 // When the keyboard opens (or a field is focused while it is open), the field being
 // edited may end up under the keyboard or the properties sheet; scroll it back into view.
@@ -44,15 +46,23 @@ export function useKeepFocusedFieldVisible(
       }
     };
 
+    // Without a keyboard, whoever moved the focus owns the scroll position
+    // (revealing a field from the list centres it with a smooth scroll).
+    const handleFocusIn = (): void => {
+      if (isKeyboardOpen()) {
+        schedule();
+      }
+    };
+
     const viewport = window.visualViewport;
     viewport?.addEventListener('resize', schedule);
     viewport?.addEventListener('scroll', schedule);
-    document.addEventListener('focusin', schedule);
+    document.addEventListener('focusin', handleFocusIn);
     return () => {
       cancelAnimationFrame(frame);
       viewport?.removeEventListener('resize', schedule);
       viewport?.removeEventListener('scroll', schedule);
-      document.removeEventListener('focusin', schedule);
+      document.removeEventListener('focusin', handleFocusIn);
     };
   }, [scrollRef]);
 }
@@ -70,4 +80,12 @@ function coveringSheetTop(fieldRect: DOMRect): number {
     rect.left < fieldRect.right &&
     rect.right > fieldRect.left;
   return overlapsHorizontally ? rect.top : Number.POSITIVE_INFINITY;
+}
+
+function isKeyboardOpen(): boolean {
+  const viewport = window.visualViewport;
+  return (
+    viewport !== null &&
+    window.innerHeight - viewport.height > KEYBOARD_HEIGHT_THRESHOLD
+  );
 }

@@ -1,16 +1,6 @@
 import type React from 'react';
 import { css } from '@emotion/css';
-import {
-  ChevronUp,
-  Copy,
-  Download,
-  Keyboard,
-  MousePointerClick,
-  MoveHorizontal,
-  Trash,
-  Undo2,
-  X,
-} from 'lucide-react';
+import { ChevronUp, Trash, X } from 'lucide-react';
 import {
   MAX_FONT_SIZE,
   MAX_MARK_SIZE,
@@ -31,17 +21,9 @@ import { MOBILE_MEDIA } from '../../styles/breakpoints';
 import { getMinSpacing } from '../../utilities/geometry';
 import { Button } from '../ui/Button';
 import { IconButton } from '../ui/IconButton';
-import { Kbd } from '../ui/Kbd';
 import { NumberField } from '../ui/NumberField';
 
-interface PropertiesPanelProps {
-  // While the on-screen keyboard is up only the header is shown.
-  collapsedOnMobile: boolean;
-}
-
-export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
-  collapsedOnMobile,
-}) => {
+export const PropertiesPanel: React.FC = () => {
   const { state, dispatch, pages } = useEditor();
   const selected = state.items.find((item) => item.id === state.selectedId);
 
@@ -51,12 +33,10 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   };
 
   return (
-    <aside
+    <section
       className={styles.root}
       aria-label='Properties'
-      data-properties-panel
-      data-open={selected !== undefined}
-      data-collapsed={collapsedOnMobile}
+      data-section='properties'
     >
       <header className={styles.header}>
         <h2 className={styles.title}>{getTitle(selected)}</h2>
@@ -83,7 +63,11 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         )}
       </header>
 
-      {!selected && <EmptyHint tool={state.tool} />}
+      {!selected && (
+        <p className={styles.empty}>
+          Select a field on the page or in the list below to edit it.
+        </p>
+      )}
       {selected?.kind === ItemKind.Text && (
         <TextProperties
           item={selected}
@@ -96,55 +80,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
           page={pages[selected.pageIndex].geometry}
         />
       )}
-    </aside>
+    </section>
   );
 };
-
-interface EmptyHintProps {
-  tool: ItemKind;
-}
-
-const EmptyHint: React.FC<EmptyHintProps> = ({ tool }) => (
-  <div className={styles.empty}>
-    <p className={styles.emptyTitle}>Nothing selected</p>
-    <ul className={styles.tips}>
-      <li className={styles.tip}>
-        <MousePointerClick size={14} />
-        <span>
-          Click a page to place {tool === ItemKind.Text ? 'text' : 'an X mark'}
-        </span>
-      </li>
-      <li className={styles.tip}>
-        <MoveHorizontal size={14} />
-        <span>Drag the blue handle to stretch letters into the boxes</span>
-      </li>
-      <li className={styles.tip}>
-        <Keyboard size={14} />
-        <span>
-          <Kbd>T</Kbd> text · <Kbd>X</Kbd> mark · <Kbd>Esc</Kbd> deselect
-        </span>
-      </li>
-      <li className={styles.tip}>
-        <Undo2 size={14} />
-        <span>
-          <Kbd>⌘Z</Kbd> undo · <Kbd>⇧⌘Z</Kbd> redo
-        </span>
-      </li>
-      <li className={styles.tip}>
-        <Copy size={14} />
-        <span>
-          <Kbd>⌘C</Kbd> <Kbd>⌘V</Kbd> duplicate a field under the cursor
-        </span>
-      </li>
-      <li className={styles.tip}>
-        <Download size={14} />
-        <span>
-          <Kbd>⌘S</Kbd> downloads the filled PDF
-        </span>
-      </li>
-    </ul>
-  </div>
-);
 
 interface TextPropertiesProps {
   item: TextItem;
@@ -331,36 +269,14 @@ function blurActiveElement(): void {
 
 const styles = {
   root: css`
-    flex-shrink: 0;
-    width: var(--panel-width);
-    display: flex;
-    flex-direction: column;
+    flex: 0 1 auto;
+    min-height: 0;
     overflow-y: auto;
-    border-left: 1px solid var(--color-border);
-    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
 
     ${MOBILE_MEDIA} {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: var(--mobile-rail-height);
-      z-index: 3;
-      width: auto;
-      max-height: 55%;
-      border-left: 0;
-      border-top: 1px solid var(--color-border);
-      border-radius: 16px 16px 0 0;
-      box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.6);
-
-      &[data-open='false'] {
-        display: none;
-      }
-
-      &[data-collapsed='true'] {
-        bottom: 0;
-        max-height: 48px;
-        overflow: hidden;
-      }
+      overflow: visible;
+      border-bottom: 0;
     }
   `,
   expandButton: css`
@@ -493,32 +409,9 @@ const styles = {
     }
   `,
   empty: css`
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding: 20px 16px;
-  `,
-  emptyTitle: css`
+    padding: 16px;
     font-size: 13px;
-    color: var(--color-fg-muted);
-  `,
-  tips: css`
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  `,
-  tip: css`
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 13px;
-    line-height: 1.45;
-    color: var(--color-fg-muted);
-
-    svg {
-      flex-shrink: 0;
-      margin-top: 3px;
-      color: var(--color-fg-subtle);
-    }
+    line-height: 1.5;
+    color: var(--color-fg-subtle);
   `,
 };

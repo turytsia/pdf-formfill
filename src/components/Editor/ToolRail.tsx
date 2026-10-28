@@ -1,6 +1,6 @@
 import type React from 'react';
-import { css } from '@emotion/css';
-import { Type, X } from 'lucide-react';
+import { css, cx } from '@emotion/css';
+import { List, Type, X } from 'lucide-react';
 import { useEditor } from '../../state/EditorContext';
 import { ItemKind } from '../../state/types';
 import { MOBILE_MEDIA } from '../../styles/breakpoints';
@@ -24,32 +24,52 @@ const TOOLS: Array<ToolOption> = [
 
 interface ToolRailProps {
   hiddenOnMobile: boolean;
+  // Phones open the field list from here; on wider screens it is always visible.
+  fieldsOpen: boolean;
+  onToggleFields: () => void;
 }
 
-export const ToolRail: React.FC<ToolRailProps> = ({ hiddenOnMobile }) => {
+export const ToolRail: React.FC<ToolRailProps> = ({
+  hiddenOnMobile,
+  fieldsOpen,
+  onToggleFields,
+}) => {
   const { state, dispatch } = useEditor();
+  const fieldCount = state.items.length;
 
   return (
     <div
       className={styles.root}
-      role='radiogroup'
+      role='toolbar'
       aria-label='Tools'
       data-hidden-on-mobile={hiddenOnMobile}
     >
-      {TOOLS.map((tool) => (
-        <button
-          key={tool.kind}
-          type='button'
-          role='radio'
-          aria-checked={state.tool === tool.kind}
-          title={`${tool.label} (${tool.shortcut})`}
-          className={styles.tool}
-          onClick={() => dispatch({ type: 'setTool', tool: tool.kind })}
-        >
-          {tool.icon}
-          <span className={styles.label}>{tool.label}</span>
-        </button>
-      ))}
+      <div className={styles.tools} role='radiogroup' aria-label='Insert tool'>
+        {TOOLS.map((tool) => (
+          <button
+            key={tool.kind}
+            type='button'
+            role='radio'
+            aria-checked={state.tool === tool.kind}
+            title={`${tool.label} (${tool.shortcut})`}
+            className={styles.tool}
+            onClick={() => dispatch({ type: 'setTool', tool: tool.kind })}
+          >
+            {tool.icon}
+            <span className={styles.label}>{tool.label}</span>
+          </button>
+        ))}
+      </div>
+      <button
+        type='button'
+        className={cx(styles.tool, styles.fieldsToggle)}
+        aria-pressed={fieldsOpen}
+        onClick={onToggleFields}
+      >
+        <List size={16} />
+        <span className={styles.label}>Fields</span>
+        {fieldCount > 0 && <span className={styles.count}>{fieldCount}</span>}
+      </button>
     </div>
   );
 };
@@ -61,7 +81,6 @@ const styles = {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
     padding: 12px 8px;
     border-right: 1px solid var(--color-border);
     background: var(--color-bg);
@@ -82,6 +101,17 @@ const styles = {
       }
     }
   `,
+  tools: css`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+
+    ${MOBILE_MEDIA} {
+      flex-direction: row;
+      gap: 8px;
+    }
+  `,
   tool: css`
     width: 48px;
     height: 52px;
@@ -90,14 +120,6 @@ const styles = {
     align-items: center;
     justify-content: center;
     gap: 6px;
-
-    ${MOBILE_MEDIA} {
-      flex-direction: row;
-      width: auto;
-      height: 40px;
-      padding: 0 18px;
-      gap: 8px;
-    }
     border-radius: var(--radius-md);
     color: var(--color-fg-muted);
     transition:
@@ -110,10 +132,27 @@ const styles = {
       color: var(--color-fg);
     }
 
-    &[aria-checked='true'] {
+    &[aria-checked='true'],
+    &[aria-pressed='true'] {
       background: var(--color-surface-active);
       color: var(--color-fg);
       box-shadow: inset 0 0 0 1px var(--color-border-strong);
+    }
+
+    ${MOBILE_MEDIA} {
+      flex-direction: row;
+      width: auto;
+      height: 40px;
+      padding: 0 18px;
+      gap: 8px;
+    }
+  `,
+  fieldsToggle: css`
+    display: none;
+
+    ${MOBILE_MEDIA} {
+      display: flex;
+      padding: 0 14px;
     }
   `,
   label: css`
@@ -125,5 +164,16 @@ const styles = {
     ${MOBILE_MEDIA} {
       font-size: 13px;
     }
+  `,
+  count: css`
+    min-width: 18px;
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: var(--color-surface-active);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+    color: var(--color-fg-muted);
   `,
 };

@@ -3,6 +3,7 @@ import { css } from '@emotion/css';
 import { Download, FileText, FolderOpen } from 'lucide-react';
 import { MOBILE_MEDIA } from '../../styles/breakpoints';
 import { Button } from '../ui/Button';
+import { GithubLink } from '../ui/GithubLink';
 import { Wordmark } from '../ui/Wordmark';
 import { HistoryControls } from './HistoryControls';
 
@@ -43,6 +44,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     </div>
 
     <div className={styles.right}>
+      <GithubLink className={styles.wideOnly} />
       {exportError && (
         <span role='alert' className={styles.error}>
           {exportError}

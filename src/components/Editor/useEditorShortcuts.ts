@@ -7,6 +7,10 @@ export function useEditorShortcuts(onDownload: () => void): void {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
+      // A modal dialog handles its own keys (Escape closes it).
+      if (event.target instanceof Element && event.target.closest('dialog')) {
+        return;
+      }
       const key = event.key.toLowerCase();
       const withModifier = event.metaKey || event.ctrlKey;
 
