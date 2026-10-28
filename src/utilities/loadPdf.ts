@@ -1,6 +1,7 @@
 import {
   getDocument,
   GlobalWorkerOptions,
+  type PDFDocumentProxy,
   type PDFPageProxy,
 } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -9,14 +10,16 @@ import type { PageGeometry } from '../state/types';
 GlobalWorkerOptions.workerSrc = workerUrl;
 
 export interface LoadedPage {
-  proxy: PDFPageProxy;
+  proxy: PDFPageProxy | null;
   geometry: PageGeometry;
 }
 
 export interface LoadedPdf {
   name: string;
   bytes: ArrayBuffer;
-  pages: Array<LoadedPage>;
+  document: PDFDocumentProxy;
+  pageCount: number;
+  firstPage: LoadedPage;
 }
 
 export type PdfLoadResult =
@@ -30,15 +33,17 @@ export async function loadPdf(file: File): Promise<PdfLoadResult> {
     const pdfDocument = await getDocument({
       data: new Uint8Array(bytes.slice(0)),
     }).promise;
-    const proxies = await Promise.all(
-      Array.from({ length: pdfDocument.numPages }, (_, index) =>
-        pdfDocument.getPage(index + 1),
-      ),
-    );
+    const firstProxy = await pdfDocument.getPage(1);
 
     return {
       ok: true,
-      pdf: { name: file.name, bytes, pages: proxies.map(toLoadedPage) },
+      pdf: {
+        name: file.name,
+        bytes,
+        document: pdfDocument,
+        pageCount: pdfDocument.numPages,
+        firstPage: toLoadedPage(firstProxy, 0),
+      },
     };
   } catch (error) {
     return { ok: false, message: describeLoadError(error) };
@@ -48,13 +53,22 @@ export async function loadPdf(file: File): Promise<PdfLoadResult> {
 export const isPdfFile = (file: File): boolean =>
   file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
 
-function toLoadedPage(proxy: PDFPageProxy, index: number): LoadedPage {
+export function toLoadedPage(proxy: PDFPageProxy, index: number): LoadedPage {
   const [x0, y0, x1, y1] = proxy.view;
 
   return {
     proxy,
     geometry: { index, x0, y0, x1, y1, width: x1 - x0, height: y1 - y0 },
   };
+}
+
+// Pages that have not been fetched yet are laid out with the first page's size.
+export function createInitialPages(pdf: LoadedPdf): Array<LoadedPage> {
+  return Array.from({ length: pdf.pageCount }, (_, index) =>
+    index === 0
+      ? pdf.firstPage
+      : { proxy: null, geometry: { ...pdf.firstPage.geometry, index } },
+  );
 }
 
 function describeLoadError(error: unknown): string {

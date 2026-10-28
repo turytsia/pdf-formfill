@@ -16,9 +16,6 @@ interface EditorHeaderProps {
   onReplace: () => void;
 }
 
-const pluralize = (count: number, noun: string): string =>
-  `${count} ${count === 1 ? noun : `${noun}s`}`;
-
 export const EditorHeader: React.FC<EditorHeaderProps> = ({
   fileName,
   pageCount,
@@ -71,6 +68,10 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     </div>
   </header>
 );
+
+function pluralize(count: number, noun: string): string {
+  return `${count} ${count === 1 ? noun : `${noun}s`}`;
+}
 
 const styles = {
   root: css`

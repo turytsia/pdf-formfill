@@ -10,10 +10,6 @@ import {
 } from '../../utilities/clipboard';
 import { toPdfPoint } from '../../utilities/geometry';
 
-const isInsidePanel = (target: EventTarget | null): boolean =>
-  target instanceof Element &&
-  target.closest('[data-properties-panel]') !== null;
-
 export function useEditorClipboard(): void {
   const { state, dispatch, pages, font } = useEditor();
   const pointerRef = useRef<Point | null>(null);
@@ -103,4 +99,11 @@ export function useEditorClipboard(): void {
       document.removeEventListener('paste', handlePaste);
     };
   }, [state.items, state.selectedId, state.zoom, pages, font, dispatch]);
+}
+
+function isInsidePanel(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest('[data-properties-panel]') !== null
+  );
 }

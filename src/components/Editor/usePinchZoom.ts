@@ -22,38 +22,6 @@ interface ZoomAnchor {
   focus: Point;
 }
 
-// Padding and page gaps don't scale with zoom, so the anchor is tied to a page.
-function findAnchor(container: HTMLElement, focus: Point): ZoomAnchor | null {
-  const pages = Array.from(container.querySelectorAll('[data-page-index]'));
-  let best: { page: Element; rect: DOMRect; distance: number } | null = null;
-  for (const page of pages) {
-    const rect = page.getBoundingClientRect();
-    const dy = Math.max(rect.top - focus.y, 0, focus.y - rect.bottom);
-    if (!best || dy < best.distance) {
-      best = { page, rect, distance: dy };
-    }
-  }
-  if (!best) {
-    return null;
-  }
-  return {
-    page: best.page,
-    fraction: {
-      x: (focus.x - best.rect.left) / best.rect.width,
-      y: (focus.y - best.rect.top) / best.rect.height,
-    },
-    focus,
-  };
-}
-
-const distanceBetween = (points: Array<Point>): number =>
-  Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
-
-const midpointOf = (points: Array<Point>): Point => ({
-  x: (points[0].x + points[1].x) / 2,
-  y: (points[0].y + points[1].y) / 2,
-});
-
 export function usePinchZoom(
   scrollRef: RefObject<HTMLDivElement | null>,
 ): void {
@@ -205,4 +173,39 @@ export function usePinchZoom(
     container.scrollTop +=
       rect.top + anchor.fraction.y * rect.height - anchor.focus.y;
   }, [scrollRef, zoom]);
+}
+
+// Padding and page gaps don't scale with zoom, so the anchor is tied to a page.
+function findAnchor(container: HTMLElement, focus: Point): ZoomAnchor | null {
+  const pages = Array.from(container.querySelectorAll('[data-page-index]'));
+  let best: { page: Element; rect: DOMRect; distance: number } | null = null;
+  for (const page of pages) {
+    const rect = page.getBoundingClientRect();
+    const dy = Math.max(rect.top - focus.y, 0, focus.y - rect.bottom);
+    if (!best || dy < best.distance) {
+      best = { page, rect, distance: dy };
+    }
+  }
+  if (!best) {
+    return null;
+  }
+  return {
+    page: best.page,
+    fraction: {
+      x: (focus.x - best.rect.left) / best.rect.width,
+      y: (focus.y - best.rect.top) / best.rect.height,
+    },
+    focus,
+  };
+}
+
+function distanceBetween(points: Array<Point>): number {
+  return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+}
+
+function midpointOf(points: Array<Point>): Point {
+  return {
+    x: (points[0].x + points[1].x) / 2,
+    y: (points[0].y + points[1].y) / 2,
+  };
 }

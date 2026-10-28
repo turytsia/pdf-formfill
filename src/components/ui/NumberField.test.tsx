@@ -5,35 +5,6 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { NumberField } from './NumberField';
 
-interface ControlledNumberFieldProps {
-  initialValue: number;
-  min?: number;
-  max?: number;
-  onChange?: (value: number) => void;
-}
-
-const ControlledNumberField: React.FC<ControlledNumberFieldProps> = ({
-  initialValue,
-  min,
-  max,
-  onChange,
-}) => {
-  const [value, setValue] = useState(initialValue);
-
-  return (
-    <NumberField
-      label='Size'
-      value={value}
-      min={min}
-      max={max}
-      onChange={(next) => {
-        setValue(next);
-        onChange?.(next);
-      }}
-    />
-  );
-};
-
 describe('NumberField', () => {
   it('should report the typed value', async () => {
     const user = userEvent.setup();
@@ -111,3 +82,32 @@ describe('NumberField', () => {
     expect(input).toHaveValue(10);
   });
 });
+
+interface ControlledNumberFieldProps {
+  initialValue: number;
+  min?: number;
+  max?: number;
+  onChange?: (value: number) => void;
+}
+
+function ControlledNumberField({
+  initialValue,
+  min,
+  max,
+  onChange,
+}: ControlledNumberFieldProps): React.JSX.Element {
+  const [value, setValue] = useState(initialValue);
+
+  return (
+    <NumberField
+      label='Size'
+      value={value}
+      min={min}
+      max={max}
+      onChange={(next) => {
+        setValue(next);
+        onChange?.(next);
+      }}
+    />
+  );
+}

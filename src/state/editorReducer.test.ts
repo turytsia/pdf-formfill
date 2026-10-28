@@ -9,9 +9,6 @@ import {
 } from './editorReducer';
 import { ItemKind } from './types';
 
-const reduceAll = (actions: Array<EditorAction>): EditorState =>
-  actions.reduce(editorReducer, INITIAL_EDITOR_STATE);
-
 describe('editorReducer', () => {
   it('should select a newly added item', () => {
     const item = createTextItem(0, 10, 20, INITIAL_EDITOR_STATE.defaults);
@@ -263,3 +260,7 @@ describe('editorReducer', () => {
     });
   });
 });
+
+function reduceAll(actions: Array<EditorAction>): EditorState {
+  return actions.reduce(editorReducer, INITIAL_EDITOR_STATE);
+}

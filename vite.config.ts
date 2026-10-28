@@ -7,6 +7,10 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
   plugins: [react()],
+  worker: { format: 'es' },
+  // Only the export worker imports these; without pre-bundling, the dev server
+  // discovers them mid-export and rejects the worker's imports with 504s.
+  optimizeDeps: { include: ['pdf-lib', '@pdf-lib/fontkit'] },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],

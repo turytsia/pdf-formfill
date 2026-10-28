@@ -20,7 +20,7 @@ const MAX_RASTER_PIXELS = 12_000_000;
 const RASTER_SETTLE_MS = 150;
 
 export const PageCanvas: React.FC<PageCanvasProps> = ({ page, pageCount }) => {
-  const { state, dispatch, font } = useEditor();
+  const { state, dispatch, font, requestPage } = useEditor();
   const { zoom, tool, defaults } = state;
   const { proxy, geometry } = page;
   const sectionRef = useRef<HTMLElement>(null);
@@ -49,8 +49,25 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({ page, pageCount }) => {
   }, []);
 
   useEffect(() => {
+    if (nearViewport && !proxy) {
+      requestPage(geometry.index);
+    }
+  }, [nearViewport, proxy, requestPage, geometry.index]);
+
+  // Pages far from the viewport give their bitmap back, so long documents don't accumulate memory.
+  useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !nearViewport) {
+    if (nearViewport || !canvas) {
+      return;
+    }
+    canvas.width = 0;
+    canvas.height = 0;
+    proxy?.cleanup();
+  }, [nearViewport, proxy]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !proxy || !nearViewport) {
       return;
     }
 

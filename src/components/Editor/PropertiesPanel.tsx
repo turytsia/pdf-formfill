@@ -34,23 +34,10 @@ import { IconButton } from '../ui/IconButton';
 import { Kbd } from '../ui/Kbd';
 import { NumberField } from '../ui/NumberField';
 
-const getTitle = (item: Item | undefined): string => {
-  if (!item) {
-    return 'Properties';
-  }
-  return item.kind === ItemKind.Text ? 'Text' : 'Mark';
-};
-
 interface PropertiesPanelProps {
   // While the on-screen keyboard is up only the header is shown.
   collapsedOnMobile: boolean;
 }
-
-const blurActiveElement = (): void => {
-  if (document.activeElement instanceof HTMLElement) {
-    document.activeElement.blur();
-  }
-};
 
 export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   collapsedOnMobile,
@@ -328,6 +315,19 @@ const MarkProperties: React.FC<MarkPropertiesProps> = ({ item, page }) => {
     </div>
   );
 };
+
+function getTitle(item: Item | undefined): string {
+  if (!item) {
+    return 'Properties';
+  }
+  return item.kind === ItemKind.Text ? 'Text' : 'Mark';
+}
+
+function blurActiveElement(): void {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+}
 
 const styles = {
   root: css`

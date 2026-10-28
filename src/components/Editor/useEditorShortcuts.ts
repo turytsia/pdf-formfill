@@ -2,12 +2,6 @@ import { useEffect } from 'react';
 import { useEditor } from '../../state/EditorContext';
 import { ItemKind } from '../../state/types';
 
-const isEditableTarget = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement &&
-  (target.tagName === 'INPUT' ||
-    target.tagName === 'TEXTAREA' ||
-    target.isContentEditable);
-
 export function useEditorShortcuts(onDownload: () => void): void {
   const { dispatch } = useEditor();
 
@@ -57,4 +51,13 @@ export function useEditorShortcuts(onDownload: () => void): void {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [dispatch, onDownload]);
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable)
+  );
 }

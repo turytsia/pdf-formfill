@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react';
 
-const isOnPageField = (target: EventTarget | null): boolean =>
-  target instanceof HTMLInputElement &&
-  target.closest('[data-page-index]') !== null;
-
 // True while a text field placed on a page has focus, i.e. the on-screen keyboard is up on phones.
 export function useEditingOnPage(): boolean {
   const [editing, setEditing] = useState(false);
@@ -24,4 +20,13 @@ export function useEditingOnPage(): boolean {
   }, []);
 
   return editing;
+}
+
+export function isOnPageField(
+  target: EventTarget | null,
+): target is HTMLInputElement {
+  return (
+    target instanceof HTMLInputElement &&
+    target.closest('[data-page-index]') !== null
+  );
 }

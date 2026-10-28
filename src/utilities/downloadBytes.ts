@@ -1,5 +1,8 @@
-export function downloadBytes(bytes: Uint8Array, fileName: string): void {
-  const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
+export function downloadBytes(
+  bytes: Uint8Array<ArrayBuffer>,
+  fileName: string,
+): void {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;

@@ -7,20 +7,22 @@ import {
   downloadBytes,
   getFilledFileName,
 } from '../../utilities/downloadBytes';
-import { exportFilledPdf } from '../../utilities/exportPdf';
+import { exportPdfInWorker } from '../../utilities/exportPdfInWorker';
 import type { LoadedFormFont } from '../../utilities/formFont';
 import { fitZoom } from '../../utilities/geometry';
 import type { LoadedPdf } from '../../utilities/loadPdf';
 import { MOBILE_MEDIA } from '../../styles/breakpoints';
 import { EditorHeader } from './EditorHeader';
+import { LargeFileNotice } from './LargeFileNotice';
 import { PageCanvas } from './PageCanvas';
 import { PropertiesPanel } from './PropertiesPanel';
 import { ToolRail } from './ToolRail';
 import { useEditingOnPage } from './useEditingOnPage';
 import { useEditorClipboard } from './useEditorClipboard';
 import { useEditorShortcuts } from './useEditorShortcuts';
+import { useKeepFocusedFieldVisible } from './useKeepFocusedFieldVisible';
 import { usePinchZoom } from './usePinchZoom';
-import { useVisualViewportHeight } from './useVisualViewportHeight';
+import { useVisualViewport } from './useVisualViewport';
 import { ZoomToolbar } from './ZoomToolbar';
 
 interface EditorProps {
@@ -30,7 +32,7 @@ interface EditorProps {
 }
 
 export const Editor: React.FC<EditorProps> = ({ pdf, font, onReplace }) => (
-  <EditorProvider font={font} pages={pdf.pages}>
+  <EditorProvider font={font} pdf={pdf}>
     <EditorWorkspace pdf={pdf} onReplace={onReplace} />
   </EditorProvider>
 );
@@ -44,12 +46,14 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   pdf,
   onReplace,
 }) => {
-  const { state, dispatch, font } = useEditor();
+  const { state, dispatch, font, pages } = useEditor();
   const scrollRef = useRef<HTMLDivElement>(null);
   const pagesRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const widestPage = Math.max(...pdf.pages.map((page) => page.geometry.width));
+  const widestPage = Math.max(...pages.map((page) => page.geometry.width));
+  // Later pages load lazily; the initial fit must not jump when they arrive.
+  const initialPageWidth = pdf.firstPage.geometry.width;
 
   // The gutter comes from the stylesheet so the fit follows the responsive padding.
   const measureGutter = (): number => {
@@ -82,21 +86,26 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
       type: 'setZoom',
       zoom: fitZoom(
         container.clientWidth,
-        widestPage,
+        initialPageWidth,
         Number.isFinite(gutter) ? gutter : PAGE_GUTTER,
       ),
     });
-  }, [dispatch, widestPage]);
+  }, [dispatch, initialPageWidth]);
 
   usePinchZoom(scrollRef);
-  useVisualViewportHeight();
+  useVisualViewport();
+  useKeepFocusedFieldVisible(scrollRef);
   const editingOnPage = useEditingOnPage();
 
   const handleDownload = async (): Promise<void> => {
     setExporting(true);
     setExportError(null);
     try {
-      const bytes = await exportFilledPdf(pdf.bytes, state.items, font.bytes);
+      const bytes = await exportPdfInWorker({
+        source: pdf.bytes,
+        items: state.items,
+        fontBytes: font.bytes,
+      });
       downloadBytes(bytes, getFilledFileName(pdf.name));
     } catch (error) {
       setExportError(
@@ -128,7 +137,7 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
     <div className={styles.root}>
       <EditorHeader
         fileName={pdf.name}
-        pageCount={pdf.pages.length}
+        pageCount={pdf.pageCount}
         itemCount={state.items.length}
         exporting={exporting}
         exportError={exportError}
@@ -144,15 +153,16 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
             onPointerDown={handleBackgroundPointerDown}
           >
             <div ref={pagesRef} className={styles.pages}>
-              {pdf.pages.map((page) => (
+              {pages.map((page) => (
                 <PageCanvas
                   key={page.geometry.index}
                   page={page}
-                  pageCount={pdf.pages.length}
+                  pageCount={pdf.pageCount}
                 />
               ))}
             </div>
           </div>
+          <LargeFileNotice byteLength={pdf.bytes.byteLength} />
           <ZoomToolbar
             onFit={fitToWidth}
             hiddenOnMobile={state.selectedId !== null}
@@ -170,6 +180,14 @@ const styles = {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+
+    /* Follows the visual viewport so the editor stays in the area above the keyboard. */
+    ${MOBILE_MEDIA} {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: var(--app-top, 0px);
+    }
   `,
   body: css`
     flex: 1;

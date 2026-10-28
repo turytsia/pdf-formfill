@@ -13,9 +13,6 @@ interface NumberFieldProps {
   unit?: string;
 }
 
-const formatNumber = (value: number): string =>
-  String(Math.round(value * 100) / 100);
-
 export const NumberField: React.FC<NumberFieldProps> = ({
   label,
   value,
@@ -77,6 +74,10 @@ export const NumberField: React.FC<NumberFieldProps> = ({
     </div>
   );
 };
+
+function formatNumber(value: number): string {
+  return String(Math.round(value * 100) / 100);
+}
 
 const styles = {
   root: css`

@@ -54,26 +54,6 @@ export const INITIAL_EDITOR_STATE: EditorState = {
 
 type HistoryFields = Pick<EditorState, 'past' | 'future' | 'lastBatch'>;
 
-const snapshot = (state: EditorState): HistorySnapshot => ({
-  items: state.items,
-  selectedId: state.selectedId,
-});
-
-const isEmptyText = (item: Item): boolean =>
-  item.kind === ItemKind.Text && item.text.trim() === '';
-
-function record(state: EditorState, batch: string | null): HistoryFields {
-  if (batch !== null && batch === state.lastBatch) {
-    return { past: state.past, future: state.future, lastBatch: batch };
-  }
-
-  return {
-    past: [...state.past, snapshot(state)].slice(-HISTORY_LIMIT),
-    future: [],
-    lastBatch: batch,
-  };
-}
-
 export function editorReducer(
   state: EditorState,
   action: EditorAction,
@@ -183,4 +163,24 @@ export function editorReducer(
     case 'setZoom':
       return { ...state, zoom: clamp(action.zoom, MIN_ZOOM, MAX_ZOOM) };
   }
+}
+
+function record(state: EditorState, batch: string | null): HistoryFields {
+  if (batch !== null && batch === state.lastBatch) {
+    return { past: state.past, future: state.future, lastBatch: batch };
+  }
+
+  return {
+    past: [...state.past, snapshot(state)].slice(-HISTORY_LIMIT),
+    future: [],
+    lastBatch: batch,
+  };
+}
+
+function snapshot(state: EditorState): HistorySnapshot {
+  return { items: state.items, selectedId: state.selectedId };
+}
+
+function isEmptyText(item: Item): boolean {
+  return item.kind === ItemKind.Text && item.text.trim() === '';
 }

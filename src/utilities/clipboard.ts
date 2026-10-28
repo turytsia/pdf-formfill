@@ -4,12 +4,6 @@ export const ITEM_CLIPBOARD_TYPE = 'application/x-formfill-item';
 
 export const serializeItem = (item: Item): string => JSON.stringify(item);
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
-const isFiniteNumber = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isFinite(value);
-
 // The clipboard is an external boundary, so the payload is validated field by field.
 export function parseClipboardItem(payload: string): Item | null {
   let value: unknown;
@@ -68,4 +62,12 @@ export function parseClipboardItem(payload: string): Item | null {
   }
 
   return null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }

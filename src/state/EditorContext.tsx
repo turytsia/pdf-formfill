@@ -1,38 +1,41 @@
 import type React from 'react';
 import { createContext, useContext, useReducer, type Dispatch } from 'react';
 import type { LoadedFormFont } from '../utilities/formFont';
-import type { LoadedPage } from '../utilities/loadPdf';
+import type { LoadedPage, LoadedPdf } from '../utilities/loadPdf';
 import {
   editorReducer,
   INITIAL_EDITOR_STATE,
   type EditorAction,
   type EditorState,
 } from './editorReducer';
+import { usePdfPages } from './usePdfPages';
 
 export interface EditorContextValue {
   state: EditorState;
   dispatch: Dispatch<EditorAction>;
   font: LoadedFormFont;
   pages: Array<LoadedPage>;
+  requestPage: (index: number) => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
 
 interface EditorProviderProps {
   font: LoadedFormFont;
-  pages: Array<LoadedPage>;
+  pdf: LoadedPdf;
   children: React.ReactNode;
 }
 
 export const EditorProvider: React.FC<EditorProviderProps> = ({
   font,
-  pages,
+  pdf,
   children,
 }) => {
   const [state, dispatch] = useReducer(editorReducer, INITIAL_EDITOR_STATE);
+  const { pages, requestPage } = usePdfPages(pdf);
 
   return (
-    <EditorContext value={{ state, dispatch, font, pages }}>
+    <EditorContext value={{ state, dispatch, font, pages, requestPage }}>
       {children}
     </EditorContext>
   );

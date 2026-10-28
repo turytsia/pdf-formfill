@@ -24,6 +24,7 @@ export const App: React.FC = () => {
       return;
     }
     setError(null);
+    releaseSession(session);
     setSession({ id: Date.now(), result: loadPdf(file) });
   };
 
@@ -33,7 +34,10 @@ export const App: React.FC = () => {
     openFile(new File([blob], SAMPLE_FORM_NAME, { type: 'application/pdf' }));
   };
 
-  const close = (): void => setSession(null);
+  const close = (): void => {
+    releaseSession(session);
+    setSession(null);
+  };
 
   if (!session) {
     return (
@@ -82,3 +86,12 @@ const DocumentGate: React.FC<DocumentGateProps> = ({
 
   return <Editor pdf={loaded.pdf} font={font} onReplace={onClose} />;
 };
+
+// Frees the pdf.js worker memory held by a document that is being closed.
+function releaseSession(session: Session | null): void {
+  void session?.result.then((result) => {
+    if (result.ok) {
+      void result.pdf.document.loadingTask.destroy();
+    }
+  });
+}
