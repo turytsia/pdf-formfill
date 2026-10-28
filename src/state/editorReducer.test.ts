@@ -114,6 +114,20 @@ describe('editorReducer', () => {
     expect(state).toBe(withItem);
   });
 
+  it('should snap to detected boxes by default', () => {
+    expect(INITIAL_EDITOR_STATE.snapToBoxes).toBe(true);
+  });
+
+  it('should turn snapping off without recording an undo step', () => {
+    const state = editorReducer(INITIAL_EDITOR_STATE, {
+      type: 'setSnap',
+      enabled: false,
+    });
+
+    expect(state.snapToBoxes).toBe(false);
+    expect(state.past).toEqual([]);
+  });
+
   describe('undo and redo', () => {
     it('should undo adding an item', () => {
       const mark = createMarkItem(0, 10, 20, INITIAL_EDITOR_STATE.defaults);

@@ -19,6 +19,8 @@ export interface EditorState {
   tool: ItemKind;
   zoom: number;
   defaults: ItemDefaults;
+  // Clicks on detected boxes create fields that fit them.
+  snapToBoxes: boolean;
   past: Array<HistorySnapshot>;
   future: Array<HistorySnapshot>;
   // Consecutive updates that share a batch key collapse into a single undo step.
@@ -37,6 +39,7 @@ export type EditorAction =
   | { type: 'redo' }
   | { type: 'select'; id: string | null }
   | { type: 'setTool'; tool: ItemKind }
+  | { type: 'setSnap'; enabled: boolean }
   | { type: 'setZoom'; zoom: number };
 
 export const HISTORY_LIMIT = 100;
@@ -47,6 +50,7 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   tool: ItemKind.Text,
   zoom: 1,
   defaults: INITIAL_ITEM_DEFAULTS,
+  snapToBoxes: true,
   past: [],
   future: [],
   lastBatch: null,
@@ -160,6 +164,8 @@ export function editorReducer(
         : { ...state, selectedId: action.id, lastBatch: null };
     case 'setTool':
       return { ...state, tool: action.tool };
+    case 'setSnap':
+      return { ...state, snapToBoxes: action.enabled };
     case 'setZoom':
       return { ...state, zoom: clamp(action.zoom, MIN_ZOOM, MAX_ZOOM) };
   }

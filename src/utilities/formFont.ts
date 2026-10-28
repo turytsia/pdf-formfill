@@ -51,5 +51,7 @@ export function measureFontMetrics(family: string): FontMetrics {
     ascent: metrics.fontBoundingBoxAscent / METRIC_SAMPLE_SIZE,
     descent: metrics.fontBoundingBoxDescent / METRIC_SAMPLE_SIZE,
     advance: metrics.width / METRIC_SAMPLE_SIZE,
+    capHeight:
+      context.measureText('H').actualBoundingBoxAscent / METRIC_SAMPLE_SIZE,
   };
 }

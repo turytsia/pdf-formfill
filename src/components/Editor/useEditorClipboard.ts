@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { PASTE_OFFSET } from '../../state/constants';
 import { offsetItem, placeItemAt } from '../../state/createItem';
+import { findFieldAt, snapPastedItem } from '../../state/snapItem';
 import { useEditor } from '../../state/EditorContext';
 import { ItemKind, type Item, type Point } from '../../state/types';
 import {
@@ -11,7 +12,7 @@ import {
 import { toPdfPoint } from '../../utilities/geometry';
 
 export function useEditorClipboard(): void {
-  const { state, dispatch, pages, font } = useEditor();
+  const { state, dispatch, pages, font, fieldsByPage } = useEditor();
   const pointerRef = useRef<Point | null>(null);
 
   useEffect(() => {
@@ -61,7 +62,15 @@ export function useEditorClipboard(): void {
         { x: pointer.x - bounds.left, y: pointer.y - bounds.top },
         state.zoom,
       );
-      return placeItemAt(item, page.geometry.index, center, font.metrics);
+      const target = state.snapToBoxes
+        ? findFieldAt(fieldsByPage.get(page.geometry.index) ?? [], center)
+        : null;
+      const snapped =
+        target &&
+        snapPastedItem(item, target, page.geometry.index, font.metrics);
+      return (
+        snapped ?? placeItemAt(item, page.geometry.index, center, font.metrics)
+      );
     };
 
     const handleCopy = (event: ClipboardEvent): void => {
@@ -98,7 +107,16 @@ export function useEditorClipboard(): void {
       document.removeEventListener('cut', handleCut);
       document.removeEventListener('paste', handlePaste);
     };
-  }, [state.items, state.selectedId, state.zoom, pages, font, dispatch]);
+  }, [
+    state.items,
+    state.selectedId,
+    state.zoom,
+    state.snapToBoxes,
+    pages,
+    font,
+    fieldsByPage,
+    dispatch,
+  ]);
 }
 
 function isInsidePanel(target: EventTarget | null): boolean {

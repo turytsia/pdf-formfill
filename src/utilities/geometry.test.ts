@@ -19,7 +19,12 @@ const A4: PageGeometry = {
   height: 842,
 };
 
-const METRICS: FontMetrics = { ascent: 1, descent: 0.5, advance: 0.6 };
+const METRICS: FontMetrics = {
+  ascent: 1,
+  descent: 0.5,
+  advance: 0.6,
+  capHeight: 0.7,
+};
 
 describe('geometry', () => {
   it('should map the top-left corner of the page to the screen origin', () => {

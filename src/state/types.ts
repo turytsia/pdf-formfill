@@ -48,6 +48,7 @@ export type Item = TextItem | MarkItem;
 // Relative to the font size (em units).
 export interface FontMetrics {
   ascent: number;
+  capHeight: number;
   descent: number;
   advance: number;
 }

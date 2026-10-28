@@ -6,6 +6,7 @@ import {
   Copy,
   Download,
   Keyboard,
+  Magnet,
   MousePointerClick,
   MoveHorizontal,
   Undo2,
@@ -27,6 +28,12 @@ export const HintsFooter: React.FC = () => {
           <span>
             Click a page to place{' '}
             {state.tool === ItemKind.Text ? 'text' : 'an X mark'}
+          </span>
+        </li>
+        <li className={styles.tip}>
+          <Magnet size={14} />
+          <span>
+            With Snap on, a row of boxes gets text and a single box gets an X
           </span>
         </li>
         <li className={styles.tip}>

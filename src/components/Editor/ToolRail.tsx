@@ -1,6 +1,6 @@
 import type React from 'react';
 import { css, cx } from '@emotion/css';
-import { List, Type, X } from 'lucide-react';
+import { List, Magnet, Type, X } from 'lucide-react';
 import { useEditor } from '../../state/EditorContext';
 import { ItemKind } from '../../state/types';
 import { MOBILE_MEDIA } from '../../styles/breakpoints';
@@ -60,6 +60,20 @@ export const ToolRail: React.FC<ToolRailProps> = ({
           </button>
         ))}
       </div>
+      <span className={styles.divider} aria-hidden />
+      <button
+        type='button'
+        className={cx(styles.tool, styles.snapToggle)}
+        aria-pressed={state.snapToBoxes}
+        aria-label='Snap to boxes'
+        title='Snap to boxes: a row of boxes gets text, a single box gets an X'
+        onClick={() =>
+          dispatch({ type: 'setSnap', enabled: !state.snapToBoxes })
+        }
+      >
+        <Magnet size={16} />
+        <span className={styles.label}>Snap</span>
+      </button>
       <button
         type='button'
         className={cx(styles.tool, styles.fieldsToggle)}
@@ -143,8 +157,30 @@ const styles = {
       flex-direction: row;
       width: auto;
       height: 40px;
-      padding: 0 18px;
+      padding: 0 12px;
       gap: 8px;
+    }
+  `,
+  divider: css`
+    width: 32px;
+    height: 1px;
+    margin: 8px 0;
+    background: var(--color-border);
+
+    ${MOBILE_MEDIA} {
+      width: 1px;
+      height: 24px;
+      margin: 0 2px;
+    }
+  `,
+  // Icon only on phones, where the bottom bar has little room.
+  snapToggle: css`
+    ${MOBILE_MEDIA} {
+      padding: 0 10px;
+
+      & > span {
+        display: none;
+      }
     }
   `,
   fieldsToggle: css`

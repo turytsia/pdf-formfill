@@ -1,11 +1,18 @@
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { css, cx } from '@emotion/css';
+import type { DetectedField } from '../../detection/types';
 import { createMarkItem, createTextItem } from '../../state/createItem';
 import { useEditor } from '../../state/EditorContext';
-import { ItemKind } from '../../state/types';
+import {
+  createSnappedItem,
+  findFieldAt,
+  type FieldTarget,
+} from '../../state/snapItem';
+import { ItemKind, type Point } from '../../state/types';
 import { baselineFromCenter, toPdfPoint } from '../../utilities/geometry';
 import type { LoadedPage } from '../../utilities/loadPdf';
+import { FieldHighlight } from './FieldHighlight';
 import { MarkItemView } from './MarkItemView';
 import { TextItemView } from './TextItemView';
 
@@ -18,11 +25,15 @@ interface PageCanvasProps {
 const MAX_RASTER_PIXELS = 12_000_000;
 // The bitmap is scaled by CSS while zooming and re-rendered once the zoom settles.
 const RASTER_SETTLE_MS = 150;
+const NO_FIELDS: Array<DetectedField> = [];
 
 export const PageCanvas: React.FC<PageCanvasProps> = ({ page, pageCount }) => {
-  const { state, dispatch, font, requestPage } = useEditor();
-  const { zoom, tool, defaults } = state;
+  const { state, dispatch, font, requestPage, fieldsByPage, requestDetection } =
+    useEditor();
+  const { zoom, tool, defaults, snapToBoxes } = state;
   const { proxy, geometry } = page;
+  const fields = fieldsByPage.get(geometry.index) ?? NO_FIELDS;
+  const [hovered, setHovered] = useState<FieldTarget | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rasterZoom, setRasterZoom] = useState(zoom);
@@ -53,6 +64,12 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({ page, pageCount }) => {
       requestPage(geometry.index);
     }
   }, [nearViewport, proxy, requestPage, geometry.index]);
+
+  useEffect(() => {
+    if (snapToBoxes && nearViewport && proxy) {
+      requestDetection(page);
+    }
+  }, [snapToBoxes, nearViewport, proxy, requestDetection, page]);
 
   // Pages far from the viewport give their bitmap back, so long documents don't accumulate memory.
   useEffect(() => {
@@ -108,6 +125,33 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({ page, pageCount }) => {
     };
   }, [proxy, rasterZoom, nearViewport, geometry.width, geometry.height]);
 
+  const pdfPointOf = (event: React.MouseEvent<HTMLDivElement>): Point => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return toPdfPoint(
+      geometry,
+      { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
+      zoom,
+    );
+  };
+
+  const handlePointerMove = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ): void => {
+    if (!snapToBoxes || event.pointerType === 'touch') {
+      return;
+    }
+    const target =
+      event.target === event.currentTarget
+        ? findFieldAt(fields, pdfPointOf(event))
+        : null;
+    if (
+      target?.field !== hovered?.field ||
+      target?.boxIndex !== hovered?.boxIndex
+    ) {
+      setHovered(target);
+    }
+  };
+
   const handleOverlayClick = (
     event: React.MouseEvent<HTMLDivElement>,
   ): void => {
@@ -115,12 +159,16 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({ page, pageCount }) => {
       return;
     }
 
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const point = toPdfPoint(
-      geometry,
-      { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
-      zoom,
-    );
+    const point = pdfPointOf(event);
+    const target = snapToBoxes ? findFieldAt(fields, point) : null;
+    if (target) {
+      dispatch({
+        type: 'addItem',
+        item: createSnappedItem(target, geometry.index, font.metrics),
+      });
+      return;
+    }
+
     const item =
       tool === ItemKind.Text
         ? createTextItem(
@@ -155,7 +203,12 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({ page, pageCount }) => {
           tool === ItemKind.Text ? styles.textCursor : styles.markCursor,
         )}
         onClick={handleOverlayClick}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={() => setHovered(null)}
       >
+        {snapToBoxes && hovered && (
+          <FieldHighlight target={hovered} geometry={geometry} zoom={zoom} />
+        )}
         {items.map((item) =>
           item.kind === ItemKind.Text ? (
             <TextItemView key={item.id} item={item} geometry={geometry} />

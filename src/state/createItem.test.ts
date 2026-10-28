@@ -8,7 +8,12 @@ import {
   placeItemAt,
 } from './createItem';
 
-const METRICS: FontMetrics = { ascent: 1, descent: 0.5, advance: 0.6 };
+const METRICS: FontMetrics = {
+  ascent: 1,
+  descent: 0.5,
+  advance: 0.6,
+  capHeight: 0.7,
+};
 
 describe('createItem', () => {
   describe('placeItemAt', () => {
