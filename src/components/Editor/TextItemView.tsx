@@ -12,6 +12,7 @@ import {
   toScreenPoint,
 } from '../../utilities/geometry';
 import { startPointerDrag } from '../../utilities/pointerDrag';
+import { COARSE_POINTER_MEDIA } from '../../styles/breakpoints';
 
 interface TextItemViewProps {
   item: TextItem;
@@ -216,6 +217,12 @@ const styles = {
     &:active {
       cursor: grabbing;
     }
+
+    ${COARSE_POINTER_MEDIA} {
+      left: -36px;
+      width: 28px;
+      height: 40px;
+    }
   `,
   stretchHandle: css`
     position: absolute;
@@ -239,6 +246,17 @@ const styles = {
 
     &:hover {
       background: #3291ff;
+    }
+
+    ${COARSE_POINTER_MEDIA} {
+      right: -20px;
+      top: -8px;
+      bottom: -8px;
+      width: 12px;
+
+      &::before {
+        inset: -12px -14px;
+      }
     }
   `,
 };

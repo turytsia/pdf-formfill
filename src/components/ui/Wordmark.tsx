@@ -1,13 +1,22 @@
 import type React from 'react';
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { PenLine } from 'lucide-react';
+import { MOBILE_MEDIA } from '../../styles/breakpoints';
 
-export const Wordmark: React.FC = () => (
+interface WordmarkProps {
+  compactOnMobile?: boolean;
+}
+
+export const Wordmark: React.FC<WordmarkProps> = ({
+  compactOnMobile = false,
+}) => (
   <div className={styles.root}>
     <span className={styles.mark} aria-hidden>
       <PenLine size={12} strokeWidth={2.5} />
     </span>
-    <span className={styles.name}>Formfill</span>
+    <span className={cx(styles.name, compactOnMobile && styles.nameCompact)}>
+      Formfill
+    </span>
   </div>
 );
 
@@ -31,5 +40,10 @@ const styles = {
     font-size: 15px;
     font-weight: 600;
     letter-spacing: -0.02em;
+  `,
+  nameCompact: css`
+    ${MOBILE_MEDIA} {
+      display: none;
+    }
   `,
 };

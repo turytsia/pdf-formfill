@@ -8,6 +8,7 @@ import {
   MoveHorizontal,
   Trash,
   Undo2,
+  X,
 } from 'lucide-react';
 import {
   MAX_FONT_SIZE,
@@ -25,8 +26,10 @@ import {
   type PageGeometry,
   type TextItem,
 } from '../../state/types';
+import { MOBILE_MEDIA } from '../../styles/breakpoints';
 import { getMinSpacing } from '../../utilities/geometry';
 import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
 import { Kbd } from '../ui/Kbd';
 import { NumberField } from '../ui/NumberField';
 
@@ -38,19 +41,36 @@ const getTitle = (item: Item | undefined): string => {
 };
 
 export const PropertiesPanel: React.FC = () => {
-  const { state, pages } = useEditor();
+  const { state, dispatch, pages } = useEditor();
   const selected = state.items.find((item) => item.id === state.selectedId);
+
+  const finishEditing = (): void => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    dispatch({ type: 'select', id: null });
+  };
 
   return (
     <aside
       className={styles.root}
       aria-label='Properties'
       data-properties-panel
+      data-open={selected !== undefined}
     >
       <header className={styles.header}>
         <h2 className={styles.title}>{getTitle(selected)}</h2>
         {selected && (
-          <span className={styles.badge}>Page {selected.pageIndex + 1}</span>
+          <div className={styles.headerActions}>
+            <span className={styles.badge}>Page {selected.pageIndex + 1}</span>
+            <IconButton
+              aria-label='Done editing'
+              className={styles.closeButton}
+              onClick={finishEditing}
+            >
+              <X size={16} />
+            </IconButton>
+          </div>
         )}
       </header>
 
@@ -296,8 +316,29 @@ const styles = {
     overflow-y: auto;
     border-left: 1px solid var(--color-border);
     background: var(--color-bg);
+
+    ${MOBILE_MEDIA} {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: var(--mobile-rail-height);
+      z-index: 3;
+      width: auto;
+      max-height: 55%;
+      border-left: 0;
+      border-top: 1px solid var(--color-border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.6);
+
+      &[data-open='false'] {
+        display: none;
+      }
+    }
   `,
   header: css`
+    position: sticky;
+    top: 0;
+    z-index: 1;
     flex-shrink: 0;
     height: 48px;
     display: flex;
@@ -305,6 +346,19 @@ const styles = {
     justify-content: space-between;
     padding: 0 16px;
     border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+  `,
+  headerActions: css`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  `,
+  closeButton: css`
+    display: none;
+
+    ${MOBILE_MEDIA} {
+      display: inline-flex;
+    }
   `,
   title: css`
     font-size: 13px;

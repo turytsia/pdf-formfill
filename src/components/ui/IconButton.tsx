@@ -1,5 +1,6 @@
 import type React from 'react';
 import { css, cx } from '@emotion/css';
+import { COARSE_POINTER_MEDIA } from '../../styles/breakpoints';
 
 interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   'aria-label': string;
@@ -36,6 +37,11 @@ const styles = {
     &:disabled {
       opacity: 0.4;
       cursor: not-allowed;
+    }
+
+    ${COARSE_POINTER_MEDIA} {
+      width: 40px;
+      height: 40px;
     }
   `,
 };

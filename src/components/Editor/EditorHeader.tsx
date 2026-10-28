@@ -1,6 +1,7 @@
 import type React from 'react';
 import { css } from '@emotion/css';
 import { Download, FileText, FolderOpen } from 'lucide-react';
+import { MOBILE_MEDIA } from '../../styles/breakpoints';
 import { Button } from '../ui/Button';
 import { Wordmark } from '../ui/Wordmark';
 import { HistoryControls } from './HistoryControls';
@@ -29,7 +30,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
 }) => (
   <header className={styles.root}>
     <div className={styles.left}>
-      <Wordmark />
+      <Wordmark compactOnMobile />
       <span className={styles.divider} />
       <HistoryControls />
     </div>
@@ -50,8 +51,13 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           {exportError}
         </span>
       )}
-      <Button size='sm' icon={<FolderOpen size={14} />} onClick={onReplace}>
-        Open another
+      <Button
+        size='sm'
+        icon={<FolderOpen size={14} />}
+        aria-label='Open another PDF'
+        onClick={onReplace}
+      >
+        <span className={styles.wideOnly}>Open another</span>
       </Button>
       <Button
         size='sm'
@@ -77,11 +83,22 @@ const styles = {
     padding: 0 16px;
     border-bottom: 1px solid var(--color-border);
     background: var(--color-bg);
+
+    ${MOBILE_MEDIA} {
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      padding: 0 12px;
+    }
   `,
   left: css`
     display: flex;
     align-items: center;
     gap: 12px;
+  `,
+  wideOnly: css`
+    ${MOBILE_MEDIA} {
+      display: none;
+    }
   `,
   divider: css`
     width: 1px;
@@ -96,6 +113,10 @@ const styles = {
     max-width: 520px;
     font-size: 13px;
     color: var(--color-fg-muted);
+
+    ${MOBILE_MEDIA} {
+      display: none;
+    }
   `,
   fileIcon: css`
     flex-shrink: 0;

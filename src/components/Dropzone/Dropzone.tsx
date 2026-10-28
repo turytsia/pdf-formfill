@@ -2,6 +2,7 @@ import type React from 'react';
 import { useRef, useState } from 'react';
 import { css } from '@emotion/css';
 import { Download, FileText, Lock, MoveHorizontal, Upload } from 'lucide-react';
+import { MOBILE_MEDIA } from '../../styles/breakpoints';
 import { Button } from '../ui/Button';
 import { Wordmark } from '../ui/Wordmark';
 
@@ -87,7 +88,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
           <span className={styles.dropTitle}>
             {dragging ? 'Release to open' : 'Drop your PDF here'}
           </span>
-          <span className={styles.dropHint}>or click to browse</span>
+          <span className={styles.dropHint}>or browse your files</span>
         </button>
         <input
           ref={inputRef}
@@ -192,6 +193,10 @@ const styles = {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+
+    ${MOBILE_MEDIA} {
+      font-size: 32px;
+    }
   `,
   subtitle: css`
     max-width: 460px;
@@ -224,6 +229,10 @@ const styles = {
       border-color: var(--color-accent);
       background: var(--color-accent-faint);
       transform: scale(1.01);
+    }
+
+    ${MOBILE_MEDIA} {
+      padding: 32px 16px;
     }
   `,
   dropIcon: css`
@@ -267,6 +276,13 @@ const styles = {
     padding: 24px;
     font-size: 13px;
     color: var(--color-fg-subtle);
+
+    ${MOBILE_MEDIA} {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px calc(24px + env(safe-area-inset-bottom));
+    }
   `,
   feature: css`
     display: flex;

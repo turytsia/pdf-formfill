@@ -5,6 +5,7 @@ import { useEditor } from '../../state/EditorContext';
 import type { MarkItem, PageGeometry } from '../../state/types';
 import { toScreenPoint } from '../../utilities/geometry';
 import { startPointerDrag } from '../../utilities/pointerDrag';
+import { COARSE_POINTER_MEDIA } from '../../styles/breakpoints';
 
 interface MarkItemViewProps {
   item: MarkItem;
@@ -103,6 +104,14 @@ const styles = {
 
     &:active {
       cursor: grabbing;
+    }
+
+    ${COARSE_POINTER_MEDIA} {
+      &::before {
+        content: '';
+        position: absolute;
+        inset: -12px;
+      }
     }
   `,
   glyph: css`

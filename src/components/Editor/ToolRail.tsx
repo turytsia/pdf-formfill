@@ -3,6 +3,7 @@ import { css } from '@emotion/css';
 import { Type, X } from 'lucide-react';
 import { useEditor } from '../../state/EditorContext';
 import { ItemKind } from '../../state/types';
+import { MOBILE_MEDIA } from '../../styles/breakpoints';
 
 interface ToolOption {
   kind: ItemKind;
@@ -55,6 +56,18 @@ const styles = {
     padding: 12px 8px;
     border-right: 1px solid var(--color-border);
     background: var(--color-bg);
+
+    ${MOBILE_MEDIA} {
+      order: 1;
+      width: 100%;
+      height: var(--mobile-rail-height);
+      flex-direction: row;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
+      border-right: 0;
+      border-top: 1px solid var(--color-border);
+    }
   `,
   tool: css`
     width: 48px;
@@ -64,6 +77,14 @@ const styles = {
     align-items: center;
     justify-content: center;
     gap: 6px;
+
+    ${MOBILE_MEDIA} {
+      flex-direction: row;
+      width: auto;
+      height: 40px;
+      padding: 0 18px;
+      gap: 8px;
+    }
     border-radius: var(--radius-md);
     color: var(--color-fg-muted);
     transition:
@@ -87,5 +108,9 @@ const styles = {
     font-weight: 500;
     letter-spacing: 0.02em;
     line-height: 1;
+
+    ${MOBILE_MEDIA} {
+      font-size: 13px;
+    }
   `,
 };

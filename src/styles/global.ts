@@ -35,6 +35,7 @@ injectGlobal`
 
     --header-height: 56px;
     --panel-width: 288px;
+    --mobile-rail-height: calc(56px + env(safe-area-inset-bottom));
   }
 
   *,
@@ -47,10 +48,12 @@ injectGlobal`
   body,
   #root {
     height: 100%;
+    overscroll-behavior: none;
   }
 
   body {
     margin: 0;
+    -webkit-tap-highlight-color: transparent;
     background: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-sans);

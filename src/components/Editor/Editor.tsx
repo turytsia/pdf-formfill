@@ -11,12 +11,14 @@ import { exportFilledPdf } from '../../utilities/exportPdf';
 import type { LoadedFormFont } from '../../utilities/formFont';
 import { fitZoom } from '../../utilities/geometry';
 import type { LoadedPdf } from '../../utilities/loadPdf';
+import { MOBILE_MEDIA } from '../../styles/breakpoints';
 import { EditorHeader } from './EditorHeader';
 import { PageCanvas } from './PageCanvas';
 import { PropertiesPanel } from './PropertiesPanel';
 import { ToolRail } from './ToolRail';
 import { useEditorClipboard } from './useEditorClipboard';
 import { useEditorShortcuts } from './useEditorShortcuts';
+import { usePinchZoom } from './usePinchZoom';
 import { ZoomToolbar } from './ZoomToolbar';
 
 interface EditorProps {
@@ -42,9 +44,19 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
 }) => {
   const { state, dispatch, font } = useEditor();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pagesRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const widestPage = Math.max(...pdf.pages.map((page) => page.geometry.width));
+
+  // The gutter comes from the stylesheet so the fit follows the responsive padding.
+  const measureGutter = (): number => {
+    const pages = pagesRef.current;
+    const padding = pages
+      ? parseFloat(getComputedStyle(pages).paddingLeft)
+      : Number.NaN;
+    return Number.isFinite(padding) ? padding : PAGE_GUTTER;
+  };
 
   const fitToWidth = (): void => {
     const container = scrollRef.current;
@@ -53,20 +65,28 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
     }
     dispatch({
       type: 'setZoom',
-      zoom: fitZoom(container.clientWidth, widestPage, PAGE_GUTTER),
+      zoom: fitZoom(container.clientWidth, widestPage, measureGutter()),
     });
   };
 
   useLayoutEffect(() => {
     const container = scrollRef.current;
-    if (!container) {
+    const pages = pagesRef.current;
+    if (!container || !pages) {
       return;
     }
+    const gutter = parseFloat(getComputedStyle(pages).paddingLeft);
     dispatch({
       type: 'setZoom',
-      zoom: fitZoom(container.clientWidth, widestPage, PAGE_GUTTER),
+      zoom: fitZoom(
+        container.clientWidth,
+        widestPage,
+        Number.isFinite(gutter) ? gutter : PAGE_GUTTER,
+      ),
     });
   }, [dispatch, widestPage]);
+
+  usePinchZoom(scrollRef);
 
   const handleDownload = async (): Promise<void> => {
     setExporting(true);
@@ -119,7 +139,7 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
             className={styles.scroll}
             onPointerDown={handleBackgroundPointerDown}
           >
-            <div className={styles.pages}>
+            <div ref={pagesRef} className={styles.pages}>
               {pdf.pages.map((page) => (
                 <PageCanvas
                   key={page.geometry.index}
@@ -148,16 +168,24 @@ const styles = {
     flex: 1;
     min-height: 0;
     display: flex;
+
+    ${MOBILE_MEDIA} {
+      position: relative;
+      flex-direction: column;
+    }
   `,
   canvasArea: css`
     position: relative;
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
   `,
   scroll: css`
     flex: 1;
     overflow: auto;
+    /* The browser pans; usePinchZoom handles two-finger zoom. */
+    touch-action: pan-x pan-y;
     background-color: var(--color-bg-elevated);
     background-image: radial-gradient(var(--color-border) 1px, transparent 1px);
     background-size: 24px 24px;
@@ -170,5 +198,10 @@ const styles = {
     width: max-content;
     min-width: 100%;
     padding: 32px ${PAGE_GUTTER}px 120px;
+
+    ${MOBILE_MEDIA} {
+      gap: 24px;
+      padding: 16px 16px 120px;
+    }
   `,
 };
