@@ -16,9 +16,11 @@ import { EditorHeader } from './EditorHeader';
 import { PageCanvas } from './PageCanvas';
 import { PropertiesPanel } from './PropertiesPanel';
 import { ToolRail } from './ToolRail';
+import { useEditingOnPage } from './useEditingOnPage';
 import { useEditorClipboard } from './useEditorClipboard';
 import { useEditorShortcuts } from './useEditorShortcuts';
 import { usePinchZoom } from './usePinchZoom';
+import { useVisualViewportHeight } from './useVisualViewportHeight';
 import { ZoomToolbar } from './ZoomToolbar';
 
 interface EditorProps {
@@ -87,6 +89,8 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   }, [dispatch, widestPage]);
 
   usePinchZoom(scrollRef);
+  useVisualViewportHeight();
+  const editingOnPage = useEditingOnPage();
 
   const handleDownload = async (): Promise<void> => {
     setExporting(true);
@@ -132,7 +136,7 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
         onReplace={onReplace}
       />
       <div className={styles.body}>
-        <ToolRail />
+        <ToolRail hiddenOnMobile={editingOnPage} />
         <div className={styles.canvasArea}>
           <div
             ref={scrollRef}
@@ -149,9 +153,12 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
               ))}
             </div>
           </div>
-          <ZoomToolbar onFit={fitToWidth} />
+          <ZoomToolbar
+            onFit={fitToWidth}
+            hiddenOnMobile={state.selectedId !== null}
+          />
         </div>
-        <PropertiesPanel />
+        <PropertiesPanel collapsedOnMobile={editingOnPage} />
       </div>
     </div>
   );
@@ -159,7 +166,7 @@ const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
 
 const styles = {
   root: css`
-    height: 100%;
+    height: var(--app-height, 100%);
     display: flex;
     flex-direction: column;
     overflow: hidden;

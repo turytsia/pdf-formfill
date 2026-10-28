@@ -1,6 +1,7 @@
 import type React from 'react';
 import { css } from '@emotion/css';
 import {
+  ChevronUp,
   Copy,
   Download,
   Keyboard,
@@ -40,14 +41,25 @@ const getTitle = (item: Item | undefined): string => {
   return item.kind === ItemKind.Text ? 'Text' : 'Mark';
 };
 
-export const PropertiesPanel: React.FC = () => {
+interface PropertiesPanelProps {
+  // While the on-screen keyboard is up only the header is shown.
+  collapsedOnMobile: boolean;
+}
+
+const blurActiveElement = (): void => {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+};
+
+export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
+  collapsedOnMobile,
+}) => {
   const { state, dispatch, pages } = useEditor();
   const selected = state.items.find((item) => item.id === state.selectedId);
 
   const finishEditing = (): void => {
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
+    blurActiveElement();
     dispatch({ type: 'select', id: null });
   };
 
@@ -57,12 +69,22 @@ export const PropertiesPanel: React.FC = () => {
       aria-label='Properties'
       data-properties-panel
       data-open={selected !== undefined}
+      data-collapsed={collapsedOnMobile}
     >
       <header className={styles.header}>
         <h2 className={styles.title}>{getTitle(selected)}</h2>
         {selected && (
           <div className={styles.headerActions}>
             <span className={styles.badge}>Page {selected.pageIndex + 1}</span>
+            <Button
+              variant='ghost'
+              size='sm'
+              className={styles.expandButton}
+              icon={<ChevronUp size={14} />}
+              onClick={blurActiveElement}
+            >
+              Details
+            </Button>
             <IconButton
               aria-label='Done editing'
               className={styles.closeButton}
@@ -333,6 +355,21 @@ const styles = {
       &[data-open='false'] {
         display: none;
       }
+
+      &[data-collapsed='true'] {
+        bottom: 0;
+        max-height: 48px;
+        overflow: hidden;
+      }
+    }
+  `,
+  expandButton: css`
+    display: none;
+
+    ${MOBILE_MEDIA} {
+      [data-collapsed='true'] & {
+        display: inline-flex;
+      }
     }
   `,
   header: css`
@@ -358,6 +395,10 @@ const styles = {
 
     ${MOBILE_MEDIA} {
       display: inline-flex;
+
+      [data-collapsed='true'] & {
+        display: none;
+      }
     }
   `,
   title: css`

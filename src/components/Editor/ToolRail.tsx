@@ -22,11 +22,20 @@ const TOOLS: Array<ToolOption> = [
   { kind: ItemKind.Mark, label: 'Mark', shortcut: 'X', icon: <X size={16} /> },
 ];
 
-export const ToolRail: React.FC = () => {
+interface ToolRailProps {
+  hiddenOnMobile: boolean;
+}
+
+export const ToolRail: React.FC<ToolRailProps> = ({ hiddenOnMobile }) => {
   const { state, dispatch } = useEditor();
 
   return (
-    <div className={styles.root} role='radiogroup' aria-label='Tools'>
+    <div
+      className={styles.root}
+      role='radiogroup'
+      aria-label='Tools'
+      data-hidden-on-mobile={hiddenOnMobile}
+    >
       {TOOLS.map((tool) => (
         <button
           key={tool.kind}
@@ -67,6 +76,10 @@ const styles = {
       padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
       border-right: 0;
       border-top: 1px solid var(--color-border);
+
+      &[data-hidden-on-mobile='true'] {
+        display: none;
+      }
     }
   `,
   tool: css`

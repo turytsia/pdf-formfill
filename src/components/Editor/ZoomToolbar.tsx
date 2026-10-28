@@ -3,20 +3,31 @@ import { css } from '@emotion/css';
 import { Maximize, Minus, Plus } from 'lucide-react';
 import { MAX_ZOOM, MIN_ZOOM, ZOOM_STEP } from '../../state/constants';
 import { useEditor } from '../../state/EditorContext';
+import { MOBILE_MEDIA } from '../../styles/breakpoints';
 import { roundZoom } from '../../utilities/geometry';
 import { IconButton } from '../ui/IconButton';
 
 interface ZoomToolbarProps {
   onFit: () => void;
+  // The properties sheet covers this spot on phones; pinch still zooms.
+  hiddenOnMobile: boolean;
 }
 
-export const ZoomToolbar: React.FC<ZoomToolbarProps> = ({ onFit }) => {
+export const ZoomToolbar: React.FC<ZoomToolbarProps> = ({
+  onFit,
+  hiddenOnMobile,
+}) => {
   const { state, dispatch } = useEditor();
   const setZoom = (zoom: number): void =>
     dispatch({ type: 'setZoom', zoom: roundZoom(zoom) });
 
   return (
-    <div className={styles.root} role='toolbar' aria-label='Zoom'>
+    <div
+      className={styles.root}
+      role='toolbar'
+      aria-label='Zoom'
+      data-hidden-on-mobile={hiddenOnMobile}
+    >
       <IconButton
         aria-label='Zoom out'
         disabled={state.zoom <= MIN_ZOOM}
@@ -66,6 +77,12 @@ const styles = {
     background: rgba(10, 10, 10, 0.85);
     backdrop-filter: blur(16px);
     box-shadow: var(--shadow-floating);
+
+    ${MOBILE_MEDIA} {
+      &[data-hidden-on-mobile='true'] {
+        display: none;
+      }
+    }
   `,
   divider: css`
     width: 1px;

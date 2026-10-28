@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { css, cx } from '@emotion/css';
 import { createMarkItem, createTextItem } from '../../state/createItem';
 import { useEditor } from '../../state/EditorContext';
@@ -14,40 +14,82 @@ interface PageCanvasProps {
   pageCount: number;
 }
 
+// Scanned forms carry no detail beyond this; it also keeps canvases within mobile Safari's limits.
+const MAX_RASTER_PIXELS = 12_000_000;
+// The bitmap is scaled by CSS while zooming and re-rendered once the zoom settles.
+const RASTER_SETTLE_MS = 150;
+
 export const PageCanvas: React.FC<PageCanvasProps> = ({ page, pageCount }) => {
   const { state, dispatch, font } = useEditor();
   const { zoom, tool, defaults } = state;
   const { proxy, geometry } = page;
+  const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [rasterZoom, setRasterZoom] = useState(zoom);
+  const [nearViewport, setNearViewport] = useState(false);
   const width = geometry.width * zoom;
   const height = geometry.height * zoom;
 
   useEffect(() => {
+    const timer = setTimeout(() => setRasterZoom(zoom), RASTER_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [zoom]);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setNearViewport(entry.isIntersecting),
+      { rootMargin: '50%' },
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) {
+    if (!canvas || !nearViewport) {
       return;
     }
 
-    const viewport = proxy.getViewport({ scale: zoom });
     const pixelRatio = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(viewport.width * pixelRatio);
-    canvas.height = Math.floor(viewport.height * pixelRatio);
-
-    const task = proxy.render({
-      canvas,
-      viewport,
-      transform: [pixelRatio, 0, 0, pixelRatio, 0, 0],
+    const maxScale = Math.sqrt(
+      MAX_RASTER_PIXELS / (geometry.width * geometry.height),
+    );
+    const viewport = proxy.getViewport({
+      scale: Math.min(rasterZoom * pixelRatio, maxScale),
     });
-    task.promise.catch((error: unknown) => {
-      if (!(
-        error instanceof Error && error.name === 'RenderingCancelledException'
-      )) {
-        console.error(error);
-      }
-    });
+    // Rendering off-screen keeps the previous bitmap visible until the new one is ready.
+    const offscreen = document.createElement('canvas');
+    offscreen.width = Math.floor(viewport.width);
+    offscreen.height = Math.floor(viewport.height);
 
-    return () => task.cancel();
-  }, [proxy, zoom]);
+    let cancelled = false;
+    const task = proxy.render({ canvas: offscreen, viewport });
+    task.promise
+      .then(() => {
+        if (cancelled) {
+          return;
+        }
+        canvas.width = offscreen.width;
+        canvas.height = offscreen.height;
+        canvas.getContext('2d')?.drawImage(offscreen, 0, 0);
+      })
+      .catch((error: unknown) => {
+        if (!(
+          error instanceof Error && error.name === 'RenderingCancelledException'
+        )) {
+          console.error(error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      task.cancel();
+    };
+  }, [proxy, rasterZoom, nearViewport, geometry.width, geometry.height]);
 
   const handleOverlayClick = (
     event: React.MouseEvent<HTMLDivElement>,
@@ -79,6 +121,7 @@ export const PageCanvas: React.FC<PageCanvasProps> = ({ page, pageCount }) => {
 
   return (
     <section
+      ref={sectionRef}
       className={styles.page}
       data-page-index={geometry.index}
       style={{ width, height }}
